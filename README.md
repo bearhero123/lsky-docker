@@ -118,3 +118,25 @@ docker compose exec app sh -lc "tail -n 200 storage/logs/laravel-$(date +%F).log
 - upload suffix not allowed by current group
 - no available storage strategy in admin settings
 - storage path permission issue
+
+## HTTPS with Caddy
+
+This repository includes `caddy` service in `docker-compose.override.yml`.
+
+1. Free ports `80/443` on host (stop system nginx/apache first).
+2. Edit `docker/caddy/Caddyfile`:
+- set your domain (example: `img.bearhero.shop`)
+- set a valid email for ACME notifications
+3. Start Caddy:
+```bash
+docker compose up -d caddy
+docker compose logs -f caddy
+```
+4. After certificate is issued, set local strategy URL to:
+- `https://img.bearhero.shop/i`
+5. Update APP_URL and clear cache:
+```bash
+sed -i 's#^APP_URL=.*#APP_URL=https://img.bearhero.shop#' .env
+docker compose exec app php artisan optimize:clear
+docker compose restart app nginx
+```

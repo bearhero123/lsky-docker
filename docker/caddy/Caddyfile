@@ -1,0 +1,9 @@
+{
+    # Replace with your real mailbox for ACME notifications.
+    email admin@bearhero.shop
+}
+
+img.bearhero.shop {
+    encode zstd gzip
+    reverse_proxy nginx:80
+}
