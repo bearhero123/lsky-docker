@@ -1,0 +1,80 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lsky-pro-app:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ./.env:/var/www/html/.env
+      - lsky_storage:/var/www/html/storage
+      - lsky_thumbnails:/var/www/html/public/thumbnails
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - lsky
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    image: lsky-pro-nginx:latest
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    volumes:
+      - lsky_storage:/var/www/html/storage:ro
+      - lsky_thumbnails:/var/www/html/public/thumbnails:ro
+    depends_on:
+      - app
+    networks:
+      - lsky
+
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+    environment:
+      TZ: ${TZ:-UTC}
+      MYSQL_DATABASE: ${DB_DATABASE:-lsky}
+      MYSQL_USER: ${DB_USERNAME:-lsky}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-lsky_password}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
+    volumes:
+      - lsky_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - lsky
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - lsky_redis:/data
+    networks:
+      - lsky
+
+volumes:
+  lsky_storage:
+  lsky_thumbnails:
+  lsky_mysql:
+  lsky_redis:
+
+networks:
+  lsky:
+    driver: bridge
