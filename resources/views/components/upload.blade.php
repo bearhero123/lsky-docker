@@ -1,11 +1,16 @@
+@php
+    $acceptedSuffixes = $_group?->configs?->get(\App\Enums\GroupConfigKey::AcceptedFileSuffixes, ['jpg', 'jpeg', 'png', 'gif', 'webp']) ?? ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    $maxFileSizeKb = (int) ($_group?->configs?->get(\App\Enums\GroupConfigKey::MaximumFileSize, 10240) ?? 10240);
+    $concurrentUploadNum = (int) ($_group?->configs?->get(\App\Enums\GroupConfigKey::ConcurrentUploadNum, 3) ?? 3);
+@endphp
 <div class="pb-6 h-full">
-    <input type="file" id="picker" name="file" class="hidden" accept="{{ implode(',', array_map(fn ($ext) => '.'.$ext, $_group->configs->get(\App\Enums\GroupConfigKey::AcceptedFileSuffixes))) }}" multiple>
+    <input type="file" id="picker" name="file" class="hidden" accept="{{ implode(',', array_map(fn ($ext) => '.'.$ext, $acceptedSuffixes)) }}" multiple>
 
     <div class="mb-4 p-4 bg-white rounded-md shadow-custom">
         <h1 class="tracking-wider text-2xl text-gray-700 mb-2" style="text-shadow: -4px 4px 0 rgb(0 0 0 / 10%);">Image Upload</h1>
         <p class="text-gray-500 text-sm">
-            最大可上传 {{ \App\Utils::formatSize($_group->configs->get(\App\Enums\GroupConfigKey::MaximumFileSize) * 1024) }} 的图片，上传队列最多
-            {{ $_group->configs->get(\App\Enums\GroupConfigKey::ConcurrentUploadNum) }}
+            最大可上传 {{ \App\Utils::formatSize($maxFileSizeKb * 1024) }} 的图片，上传队列最多
+            {{ $concurrentUploadNum }}
             张。本站已托管 {{ \App\Models\Image::query()->count() }} 张图片。
         </p>
         <div class="mt-3 rounded-md border-2 border-dotted border-stone-300 w-full h-full" id="picker-dnd" onclick="$('#picker').click()">
@@ -79,8 +84,8 @@
 @endpush
 @push('scripts')
     <script>
-        let allowSuffixes = @json($_group->configs->get(\App\Enums\GroupConfigKey::AcceptedFileSuffixes));
-        let maxSize = {{ $_group->configs->get(\App\Enums\GroupConfigKey::MaximumFileSize) * 1024 }};
+        let allowSuffixes = @json($acceptedSuffixes);
+        let maxSize = {{ $maxFileSizeKb * 1024 }};
         let pastedAction = '{{ Auth::check() ? Auth::user()->configs->get(\App\Enums\UserConfigKey::PastedAction) : \App\Enums\PastedAction::Waiting }}';
     </script>
     <script>
@@ -150,7 +155,7 @@
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
             },
             limitMultiFileUploads: 1,
-            limitConcurrentUploads: {{ $_group->configs->get(\App\Enums\GroupConfigKey::ConcurrentUploadNum, 3) }},
+            limitConcurrentUploads: {{ $concurrentUploadNum }},
             pasteZone: $(document),
             dropZone: $('#picker-dnd'),
             formData: (form) => {

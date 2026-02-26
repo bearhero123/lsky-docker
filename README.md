@@ -91,3 +91,30 @@ docker compose exec app php artisan optimize
 - 使用反向代理（Nginx Proxy Manager/Caddy/Nginx）配置 HTTPS。
 - 配置服务器防火墙，只开放必要端口（如 `80/443`）。
 - 定期备份 MySQL 与 `lsky_storage` 卷。
+
+## Troubleshooting
+
+### Where to check logs
+```bash
+# App/PHP-FPM + Laravel logs (recommended first)
+docker compose logs -f app
+
+# Nginx access/error output
+docker compose logs -f nginx
+
+# Laravel daily log file inside app container
+docker compose exec app sh -lc "ls -lah storage/logs && tail -n 200 storage/logs/laravel-$(date +%F).log"
+```
+
+### "Upload failed, service error, try again later"
+1. Open browser DevTools, check `POST /upload` response JSON and copy `message`.
+2. Run:
+```bash
+docker compose logs --tail=200 app
+docker compose exec app sh -lc "tail -n 200 storage/logs/laravel-$(date +%F).log"
+```
+3. Common causes:
+- file exceeds `upload_max_filesize` / `post_max_size`
+- upload suffix not allowed by current group
+- no available storage strategy in admin settings
+- storage path permission issue
