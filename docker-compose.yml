@@ -38,6 +38,21 @@ services:
     networks:
       - lsky
 
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - nginx
+    networks:
+      - lsky
+
   mysql:
     image: mysql:8.0
     restart: unless-stopped
@@ -75,6 +90,8 @@ volumes:
   lsky_thumbnails:
   lsky_mysql:
   lsky_redis:
+  caddy_data:
+  caddy_config:
 
 networks:
   lsky:
