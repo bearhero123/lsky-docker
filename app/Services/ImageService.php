@@ -176,7 +176,8 @@ class ImageService
                 // 获取拓展名，判断是否需要转换
                 $format = $format ?: $extension;
                 $filename = Str::replaceLast($extension, $format, $file->getClientOriginalName());
-                $handleImage = InterventionImage::make($file)->save('tmp_' . md5_file($file->getRealPath()), $quality);
+                $tempPath = $this->makeWritableTempPath('lsky_img_');
+                $handleImage = InterventionImage::make($file)->save($tempPath, $quality, $format);
                 $file = new UploadedFile($handleImage->basePath(), $filename, $handleImage->mime());
                 // 重新设置拓展名
                 $extension = $format;
@@ -189,7 +190,8 @@ class ImageService
                 collect($configs->get(GroupConfigKey::WatermarkConfigs))->get('mode', Mode::Overlay) == Mode::Overlay
             ) {
                 $watermarkImage = $this->stickWatermark($file, collect($configs->get(GroupConfigKey::WatermarkConfigs)));
-                $watermarkImage->save();
+                $watermarkTempPath = $this->makeWritableTempPath('lsky_wm_');
+                $watermarkImage->save($watermarkTempPath);
                 $file = new UploadedFile($watermarkImage->basePath(), $file->getClientOriginalName(), $file->getMimeType());
                 $watermarkImage->destroy();
             }
@@ -654,6 +656,19 @@ class ImageService
             $font->applyToImage($canvas);
             return $manager->make($canvas);
         }
+    }
+
+    /**
+     * @throws UploadException
+     */
+    private function makeWritableTempPath(string $prefix = 'lsky_'): string
+    {
+        $path = tempnam(sys_get_temp_dir(), $prefix);
+        if ($path === false) {
+            throw new UploadException('Unable to create temporary file, please retry.');
+        }
+
+        return $path;
     }
 
     protected function replacePathname(string $pathname, UploadedFile $file): string
