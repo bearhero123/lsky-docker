@@ -1,30 +1,12 @@
 # syntax=docker/dockerfile:1.7
 
-FROM composer:2.7 AS vendor
-WORKDIR /app
-
-COPY composer.json composer.lock ./
-RUN composer install \
-    --no-dev \
-    --prefer-dist \
-    --no-interaction \
-    --no-progress \
-    --optimize-autoloader \
-    --no-scripts
-
-COPY . .
-RUN composer dump-autoload \
-    --no-dev \
-    --optimize \
-    --classmap-authoritative \
-    --no-interaction
-
-FROM php:8.1-fpm-bookworm
+FROM php:8.1-fpm-bookworm AS base
 
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
+        git \
         libfreetype6-dev \
         libjpeg62-turbo-dev \
         libmagickwand-dev \
@@ -46,6 +28,33 @@ RUN apt-get update \
     && pecl install imagick \
     && docker-php-ext-enable imagick opcache \
     && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2.7 /usr/bin/composer /usr/local/bin/composer
+
+FROM base AS vendor
+
+WORKDIR /app
+
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    COMPOSER_MEMORY_LIMIT=-1
+
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --prefer-dist \
+    --no-interaction \
+    --no-progress \
+    --optimize-autoloader \
+    --no-scripts
+
+COPY . .
+RUN composer dump-autoload \
+    --no-dev \
+    --optimize \
+    --classmap-authoritative \
+    --no-interaction
+
+FROM base AS app
 
 WORKDIR /var/www/html
 
