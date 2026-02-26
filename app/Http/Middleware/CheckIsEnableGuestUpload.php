@@ -15,7 +15,11 @@ class CheckIsEnableGuestUpload
 
     public function handle(Request $request, Closure $next)
     {
-        // 检测是否启用了游客上传，未启用、未登录情况下跳转至登录页面
+        // First-time install has no config records yet.
+        if (! file_exists(base_path('installed.lock'))) {
+            return $next($request);
+        }
+
         if (! Utils::config(ConfigKey::IsAllowGuestUpload) && Auth::guest()) {
             return redirect('login');
         }
