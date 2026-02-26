@@ -121,7 +121,7 @@ docker compose exec app sh -lc "tail -n 200 storage/logs/laravel-$(date +%F).log
 
 ## HTTPS with Caddy
 
-This repository includes `caddy` service in `docker-compose.override.yml`.
+This repository includes `caddy` service in `docker-compose.yml`.
 
 1. Free ports `80/443` on host (stop system nginx/apache first).
 2. Edit `docker/caddy/Caddyfile`:
