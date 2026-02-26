@@ -48,7 +48,6 @@ use Intervention\Image\ImageManager;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use League\Flysystem\Filesystem;
 use League\Flysystem\FilesystemAdapter;
-use League\Flysystem\FilesystemException;
 use League\Flysystem\Ftp\FtpAdapter;
 use League\Flysystem\Ftp\FtpConnectionOptions;
 use League\Flysystem\Local\LocalFilesystemAdapter;
@@ -77,6 +76,23 @@ class ImageService
     public function store(Request $request): Image
     {
         $file = $request->file('file');
+
+        if (! $file instanceof UploadedFile) {
+            throw new UploadException('未检测到上传文件，请检查文件大小或重试。');
+        }
+
+        if (! $file->isValid()) {
+            $message = match ($file->getError()) {
+                \UPLOAD_ERR_INI_SIZE, \UPLOAD_ERR_FORM_SIZE => '上传文件超过服务器限制，请缩小文件或调大上传限制。',
+                \UPLOAD_ERR_PARTIAL => '文件仅部分上传，请重试。',
+                \UPLOAD_ERR_NO_FILE => '未选择上传文件。',
+                \UPLOAD_ERR_NO_TMP_DIR => '服务器缺少临时目录，请检查 PHP 配置。',
+                \UPLOAD_ERR_CANT_WRITE => '服务器无法写入临时文件，请检查磁盘与权限。',
+                \UPLOAD_ERR_EXTENSION => '上传被服务器扩展中断。',
+                default => '上传文件无效，请重试。',
+            };
+            throw new UploadException($message);
+        }
 
         if (Auth::guest() && !Utils::config(ConfigKey::IsAllowGuestUpload, true)) {
             throw new UploadException('管理员关闭了游客上传');
@@ -209,14 +225,21 @@ class ImageService
             $builder->where('strategy_id', $id);
         })->where('md5', $image->md5)->where('sha1', $image->sha1)->first();
         if (is_null($existing)) {
-            $handle = fopen($file, 'r');
+            $sourcePath = $file->getRealPath() ?: $file->getPathname();
+            $handle = @fopen($sourcePath, 'rb');
+            if (! is_resource($handle)) {
+                throw new UploadException('无法读取上传文件，请重试。');
+            }
             try {
                 $filesystem->writeStream($pathname, $handle);
-            } catch (FilesystemException $e) {
+            } catch (\Throwable $e) {
                 Utils::e($e, '保存图片时出现异常');
                 throw new UploadException(config('app.debug', false) ? $e->getMessage() : '图片上传失败');
+            } finally {
+                if (is_resource($handle)) {
+                    @fclose($handle);
+                }
             }
-            if (is_resource($handle)) @fclose($handle);
         } else {
             $image->fill($existing->only('path', 'name'));
         }
@@ -269,7 +292,9 @@ class ImageService
         $this->makeThumbnail($image, $file);
 
         // 上传完成后删除临时文件
-        unlink($file->getPathname());
+        if (is_file($file->getPathname())) {
+            @unlink($file->getPathname());
+        }
 
         return $image;
     }
