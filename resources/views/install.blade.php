@@ -120,9 +120,8 @@
                 <p class="mt-4 text-lg">程序安装完成。</p>
                 <div class="mt-3 space-y-1 text-gray-600">
                     <p>你可以点击 <a class="text-green-500" href="{{ route('/') }}">这里</a> 去首页。</p>
-                    <p>更多帮助请访问 <a class="text-green-500" href="https://www.lsky.pro" target="_blank">https://www.lsky.pro</a>。</p>
-                    <p>使用过程中出现任何问题请务必阅读 <a class="text-green-500" href="https://docs.lsky.pro" target="_blank">官方文档</a>。</p>
-                    <p>如果你觉得兰空图床给你带来帮助，不妨请我喝一杯咖啡☕️  <a class="text-green-500" href="https://github.com/wisp-x/lsky-pro#-%E6%8D%90%E8%B5%A0" target="_blank">去打赏</a>。</p>
+                    <p>更多帮助请访问项目仓库：<a class="text-green-500" href="https://github.com/bearhero123/lsky-docker" target="_blank">https://github.com/bearhero123/lsky-docker</a>。</p>
+                    <p>部署与运维说明请查看仓库 README 中的 Docker 部署教程。</p>
                     <p>这个页面将在下次访问时返回 404 错误，如果你想要重新安装，请删除程序根目录中的 installed.lock 文件，然后重新访问首页。</p>
                 </div>
             </div>

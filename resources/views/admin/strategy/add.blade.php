@@ -43,7 +43,7 @@
                                 <label for="configs[url]" class="block text-sm font-medium text-gray-700"><span class="text-red-600">*</span>访问网址</label>
                                 <x-input type="text" name="configs[url]" id="configs[url]" placeholder="请输入图片访问域名，需要加 http(s)://" />
                                 <small class="text-orange-500"><i class="fas fa-exclamation"></i>
-                                    本地储存的访问网址必须有根路径，例如：https://www.lsky.pro/uploads 中的 uploads 就是根路径，且根路径不能和其他策略重复。修改根路径直接影响已经上传并已使用的链接的访问。
+                                    本地储存的访问网址必须有根路径，例如：https://example.com/uploads 中的 uploads 就是根路径，且根路径不能和其他策略重复。修改根路径直接影响已经上传并已使用的链接的访问。
                                 </small>
                             </div>
                             <div class="col-span-3 sm:col-span-2 mb-4">
