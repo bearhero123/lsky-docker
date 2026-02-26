@@ -26,6 +26,9 @@ fi
 chown -R www-data:www-data storage bootstrap/cache public/thumbnails
 chmod -R ug+rwx storage bootstrap/cache public/thumbnails
 
+# Uploaded files are served by nginx in another container; ensure world-readable traverse/read bits.
+chmod -R a+rX storage/app/uploads public/thumbnails || true
+
 if [ ! -L public/i ]; then
     php artisan storage:link >/dev/null 2>&1 || true
 fi
