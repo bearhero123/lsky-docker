@@ -3,8 +3,11 @@
 namespace App\Http\Middleware;
 
 use App\Http\Result;
+use App\Models\Config as ConfigModel;
+use App\Models\Group;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class CheckIsInstalled
 {
@@ -12,15 +15,36 @@ class CheckIsInstalled
 
     public function handle(Request $request, Closure $next)
     {
-        // 检测程序是否安装
-        if (! file_exists(base_path('installed.lock'))) {
+        if (! $this->isInstalled()) {
             if (! $request->expectsJson()) {
                 return redirect('install');
-            } else {
-                return $this->fail('It has already been installed.');
             }
+
+            return $this->fail('Application is not installed yet.');
         }
 
         return $next($request);
+    }
+
+    protected function isInstalled(): bool
+    {
+        if (file_exists(base_path('installed.lock'))) {
+            return true;
+        }
+
+        try {
+            if (! Schema::hasTable('configs') || ! Schema::hasTable('groups')) {
+                return false;
+            }
+
+            if (! ConfigModel::query()->exists() || ! Group::query()->exists()) {
+                return false;
+            }
+
+            @file_put_contents(base_path('installed.lock'), '');
+            return true;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 }
